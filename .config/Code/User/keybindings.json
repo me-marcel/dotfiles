@@ -1,0 +1,313 @@
+[
+    // File Management
+    {
+        "key": "ctrl+n",
+        "command": "workbench.action.newUntitledFile"
+    },
+    {
+        "key": "ctrl+shift+n",
+        "command": "workbench.action.newWindow"
+    },
+    {
+        "key": "ctrl+shift+s",
+        "command": "workbench.action.files.saveAs"
+    },
+    {
+        "key": "ctrl+k ctrl+w",
+        "command": "workbench.action.closeAllEditors"
+    },
+
+    // Navigation
+    {
+        "key": "ctrl+g",
+        "command": "workbench.action.gotoLine"
+    },
+    {
+        "key": "ctrl+shift+o",
+        "command": "workbench.action.gotoSymbol"
+    },
+    {
+        "key": "ctrl+t",
+        "command": "workbench.action.quickOpen"
+    },
+    {
+        "key": "ctrl+shift+t",
+        "command": "workbench.action.quickOpen"
+    },
+    {
+        "key": "ctrl+shift+e",
+        "command": "workbench.view.explorer"
+    },
+    {
+        "key": "ctrl+shift+f",
+        "command": "workbench.action.findInFiles"
+    },
+    {
+        "key": "ctrl+shift+h",
+        "command": "workbench.action.replaceInFiles"
+    },
+
+    // Editor
+    {
+        "key": "ctrl+d",
+        "command": "editor.action.selectHighlights",
+        "when": "editorFocus"
+    },
+    {
+        "key": "ctrl+shift+l",
+        "command": "editor.action.selectHighlights",
+        "when": "editorFocus"
+    },
+    {
+        "key": "ctrl+u",
+        "command": "cursorUndo",
+        "when": "textInputFocus"
+    },
+    {
+        "key": "ctrl+shift+k",
+        "command": "editor.action.deleteLines",
+        "when": "textInputFocus && !editorReadonly"
+    },
+    {
+        "key": "ctrl+shift+up",
+        "command": "editor.action.moveLinesUpAction",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+    {
+        "key": "ctrl+shift+down",
+        "command": "editor.action.moveLinesDownAction",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+    {
+        "key": "ctrl+shift+alt+up",
+        "command": "editor.action.insertCursorAbove",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+shift+alt+down",
+        "command": "editor.action.insertCursorBelow",
+        "when": "editorTextFocus"
+    },
+
+    // Terminal
+    {
+        "key": "ctrl+`",
+        "command": "workbench.action.terminal.toggleTerminal"
+    },
+    {
+        "key": "ctrl+shift+`",
+        "command": "workbench.action.terminal.new"
+    },
+
+    // Git
+    {
+        "key": "ctrl+shift+g",
+        "command": "workbench.view.scm"
+    },
+    {
+        "key": "ctrl+enter",
+        "command": "git.commit",
+        "when": "scmProvider == git"
+    },
+
+    // Extensions
+    {
+        "key": "ctrl+shift+p",
+        "command": "workbench.action.showCommands"
+    },
+    {
+        "key": "f1",
+        "command": "workbench.action.showCommands"
+    },
+    {
+        "key": "ctrl+,",
+        "command": "workbench.action.openSettings"
+    },
+    {
+        "key": "ctrl+k ctrl+s",
+        "command": "workbench.action.openGlobalKeybindings"
+    },
+
+    // Bookmarks
+    {
+        "key": "ctrl+alt+k",
+        "command": "bookmarks.toggleBookmark"
+    },
+    {
+        "key": "ctrl+alt+j",
+        "command": "bookmarks.jumpToNextBookmark"
+    },
+    {
+        "key": "ctrl+alt+l",
+        "command": "bookmarks.jumpToPreviousBookmark"
+    },
+
+    // Project Manager
+    {
+        "key": "ctrl+shift+p",
+        "command": "projectManager.listProjects"
+    },
+
+    // Todo Tree
+    {
+        "key": "ctrl+shift+t",
+        "command": "todo-tree.treeView.focus"
+    },
+
+    // Formatting
+    {
+        "key": "shift+alt+f",
+        "command": "editor.action.formatDocument",
+        "when": "editorHasDocumentFormattingProvider && editorTextFocus && !editorReadonly && !inCompositeEditor"
+    },
+    {
+        "key": "ctrl+k ctrl+f",
+        "command": "editor.action.formatSelection",
+        "when": "editorHasDocumentFormattingProvider && editorHasSelection && editorTextFocus && !editorReadonly && !inCompositeEditor"
+    },
+
+    // Angular/Laravel Specific
+    {
+        "key": "ctrl+shift+a",
+        "command": "angular.generateComponent"
+    },
+    {
+        "key": "ctrl+shift+s",
+        "command": "angular.generateService"
+    },
+    {
+        "key": "ctrl+shift+m",
+        "command": "laravel-artisan.make"
+    },
+
+    // Docker
+    {
+        "key": "ctrl+shift+d",
+        "command": "docker.commands.build"
+    },
+    {
+        "key": "ctrl+shift+r",
+        "command": "docker.commands.run"
+    },
+
+    // Kubernetes
+    {
+        "key": "ctrl+shift+k",
+        "command": "extension.vsKubernetesApply"
+    },
+    {
+        "key": "ctrl+shift+d",
+        "command": "extension.vsKubernetesDelete"
+    },
+
+    // Thunder Client
+    {
+        "key": "ctrl+shift+r",
+        "command": "thunder-client.runRequest"
+    },
+
+    // Live Server
+    {
+        "key": "ctrl+shift+l",
+        "command": "liveServer.start"
+    },
+    {
+        "key": "ctrl+shift+s",
+        "command": "liveServer.stop"
+    },
+
+    // Error Lens
+    {
+        "key": "f8",
+        "command": "errorLens.nextError",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "shift+f8",
+        "command": "errorLens.previousError",
+        "when": "editorTextFocus"
+    },
+
+    // Multi-cursor
+    {
+        "key": "ctrl+alt+up",
+        "command": "editor.action.insertCursorAbove",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+down",
+        "command": "editor.action.insertCursorBelow",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+shift+alt+i",
+        "command": "editor.action.insertCursorAtEndOfEachLineSelected",
+        "when": "editorTextFocus"
+    },
+
+    // Search and Replace
+    {
+        "key": "ctrl+f",
+        "command": "actions.find"
+    },
+    {
+        "key": "ctrl+h",
+        "command": "editor.action.startFindReplaceAction"
+    },
+    {
+        "key": "f3",
+        "command": "editor.action.nextMatchFindAction",
+        "when": "editorFocus"
+    },
+    {
+        "key": "shift+f3",
+        "command": "editor.action.previousMatchFindAction",
+        "when": "editorFocus"
+    },
+
+    // Code Actions
+    {
+        "key": "ctrl+.",
+        "command": "editor.action.quickFix",
+        "when": "editorHasCodeActionsProvider && editorTextFocus"
+    },
+    {
+        "key": "shift+f12",
+        "command": "editor.action.goToReferences",
+        "when": "editorHasReferenceProvider"
+    },
+    {
+        "key": "f12",
+        "command": "editor.action.revealDefinition",
+        "when": "editorHasDefinitionProvider && editorTextFocus"
+    },
+    {
+        "key": "shift+alt+f12",
+        "command": "editor.action.peekDefinition",
+        "when": "editorHasDefinitionProvider && editorTextFocus"
+    },
+
+    // Zen Mode
+    {
+        "key": "ctrl+k z",
+        "command": "workbench.action.toggleZenMode"
+    },
+
+    // Split Editor
+    {
+        "key": "ctrl+\\",
+        "command": "workbench.action.splitEditor"
+    },
+    {
+        "key": "ctrl+1",
+        "command": "workbench.action.focusFirstEditorGroup"
+    },
+    {
+        "key": "ctrl+2",
+        "command": "workbench.action.focusSecondEditorGroup"
+    },
+    {
+        "key": "ctrl+3",
+        "command": "workbench.action.focusThirdEditorGroup"
+    }
+] 

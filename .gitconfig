@@ -1,0 +1,179 @@
+[user]
+    name = Your Name
+    email = your.email@example.com
+    signingkey = 
+
+[core]
+    editor = code --wait
+    autocrlf = input
+    filemode = false
+    excludesfile = ~/.gitignore_global
+
+[init]
+    defaultBranch = main
+
+[pull]
+    rebase = true
+
+[push]
+    default = simple
+    autoSetupRemote = true
+
+[merge]
+    ff = false
+
+[rebase]
+    autoStash = true
+
+[color]
+    ui = auto
+    branch = auto
+    diff = auto
+    status = auto
+
+[color "branch"]
+    current = yellow reverse
+    local = yellow
+    remote = green
+
+[color "diff"]
+    meta = yellow bold
+    frag = magenta bold
+    old = red bold
+    new = green bold
+
+[color "status"]
+    added = yellow
+    changed = green
+    untracked = cyan
+
+[alias]
+    # Basic aliases
+    st = status
+    co = checkout
+    br = branch
+    ci = commit
+    ca = commit -a
+    cm = commit -m
+    cam = commit -am
+    unstage = reset HEAD --
+    last = log -1 HEAD
+    visual = !gitk
+
+    # Log aliases
+    lg = log --oneline --graph --decorate
+    lga = log --oneline --graph --decorate --all
+    ll = log --oneline --graph --decorate --stat
+    lla = log --oneline --graph --decorate --all --stat
+
+    # Branch aliases
+    bm = branch -m
+    bd = branch -d
+    bD = branch -D
+    ba = branch -a
+    bv = branch -v
+
+    # Remote aliases
+    ra = remote add
+    rr = remote remove
+    rv = remote -v
+    ru = remote update
+    rp = remote prune
+
+    # Stash aliases
+    sa = stash apply
+    ss = stash save
+    sl = stash list
+    sp = stash pop
+    sd = stash drop
+
+    # Reset aliases
+    rh = reset HEAD
+    rh1 = reset HEAD~1
+    rh2 = reset HEAD~2
+    rh3 = reset HEAD~3
+
+    # Clean aliases
+    cleanf = clean -f
+    cleanfd = clean -fd
+    cleanfx = clean -fx
+
+    # Workflow aliases
+    undo = reset --soft HEAD~1
+    amend = commit --amend --reuse-message=HEAD
+    fixup = commit --fixup
+    squash = commit --squash
+
+    # Diff aliases
+    dc = diff --cached
+    dw = diff --word-diff
+    ds = diff --staged
+
+    # Show aliases
+    showf = show --name-only
+    showc = show --name-status
+
+    # Tag aliases
+    ta = tag -a
+    td = tag -d
+    tl = tag -l
+
+    # Submodule aliases
+    sma = submodule add
+    smu = submodule update
+    smi = submodule init
+
+    # Development workflow
+    feature = checkout -b feature/
+    hotfix = checkout -b hotfix/
+    release = checkout -b release/
+    bugfix = checkout -b bugfix/
+
+    # Laravel specific
+    artisan = !php artisan
+    migrate = !php artisan migrate
+    seed = !php artisan db:seed
+    route = !php artisan route:list
+    cache = !php artisan cache:clear
+    config = !php artisan config:clear
+
+    # Node.js specific
+    npm-install = !npm install
+    npm-dev = !npm run dev
+    npm-build = !npm run build
+    npm-test = !npm test
+
+[merge "ours"]
+    driver = true
+
+[push]
+    followTags = true
+
+[fetch]
+    prune = true
+
+[receive]
+    denyCurrentBranch = updateInstead
+
+[help]
+    autocorrect = 1
+
+[diff]
+    algorithm = patience
+    indentHeuristic = true
+    mnemonicPrefix = true
+    renames = copies
+
+[status]
+    showStash = true
+    submoduleSummary = true
+
+[submodule]
+    recurse = true
+
+[url "git@github.com:"]
+    insteadOf = gh:
+[url "git@gitlab.com:"]
+    insteadOf = gl:
+[url "git@bitbucket.org:"]
+    insteadOf = bb: 
