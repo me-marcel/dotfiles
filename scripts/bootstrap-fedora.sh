@@ -543,6 +543,34 @@ install_password_manager() {
   fi
 }
 
+configure_hostname() {
+  local current_hostname
+  local requested_hostname
+
+  current_hostname="$(hostnamectl --static 2>/dev/null || hostname)"
+  requested_hostname="${current_hostname}"
+
+  if [[ -t 0 ]]; then
+    read -r -p "Enter hostname [${current_hostname}]: " requested_hostname
+    requested_hostname="${requested_hostname:-${current_hostname}}"
+  else
+    echo "Non-interactive run detected; keeping hostname as ${current_hostname}."
+  fi
+
+  if [[ ! "${requested_hostname}" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]]; then
+    echo "Invalid hostname '${requested_hostname}'. Keeping ${current_hostname}." >&2
+    return 0
+  fi
+
+  if [[ "${requested_hostname}" == "${current_hostname}" ]]; then
+    echo "Hostname already set to ${current_hostname}; skipping."
+    return 0
+  fi
+
+  sudo hostnamectl set-hostname "${requested_hostname}"
+  echo "Hostname updated: ${current_hostname} -> ${requested_hostname}"
+}
+
 configure_keepassxc_appearance() {
   local desktop_src="/usr/share/applications/org.keepassxc.KeePassXC.desktop"
   local desktop_dst="${HOME}/.local/share/applications/org.keepassxc.KeePassXC.desktop"
@@ -673,6 +701,9 @@ fi
 
 install_password_manager
 configure_keepassxc_appearance
+
+echo "==> Configuring hostname"
+configure_hostname
 
 echo "==> Ensuring SSH key exists"
 ensure_ssh_key
