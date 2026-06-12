@@ -80,6 +80,98 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LOCAL_BIN_DIR="${HOME}/.local/bin"
+
+ensure_local_bin_dir() {
+  mkdir -p "${LOCAL_BIN_DIR}"
+
+  case ":${PATH}:" in
+    *":${LOCAL_BIN_DIR}:"*) ;;
+    *)
+      export PATH="${LOCAL_BIN_DIR}:${PATH}"
+      ;;
+  esac
+}
+
+machine_arch() {
+  case "$(uname -m)" in
+    x86_64)
+      echo "amd64"
+      ;;
+    aarch64|arm64)
+      echo "arm64"
+      ;;
+    *)
+      echo "Unsupported architecture: $(uname -m)" >&2
+      return 1
+      ;;
+  esac
+}
+
+latest_github_tag() {
+  local repo="$1"
+  curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
+    | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+    | head -n 1
+}
+
+install_binary_from_tarball() {
+  local url="$1"
+  local binary_name="$2"
+  local tmp_dir
+  local archive
+  local archive_entry
+
+  tmp_dir="$(mktemp -d)"
+  archive="${tmp_dir}/archive.tar.gz"
+  trap 'rm -rf "${tmp_dir}"' RETURN
+
+  curl -fsSL "$url" -o "$archive"
+  archive_entry="$(tar -tzf "$archive" | grep -E "(^|/)${binary_name}$" | head -n 1 || true)"
+
+  if [[ -z "${archive_entry}" ]]; then
+    echo "Could not locate ${binary_name} in ${url}" >&2
+    return 1
+  fi
+
+  tar -xzf "$archive" -C "$tmp_dir" "$archive_entry"
+  install -m 0755 "${tmp_dir}/${archive_entry}" "${LOCAL_BIN_DIR}/${binary_name}"
+}
+
+install_tool_fallbacks() {
+  local arch
+  local tag
+  arch="$(machine_arch)"
+  ensure_local_bin_dir
+
+  if ! command -v k9s >/dev/null 2>&1; then
+    tag="$(latest_github_tag "derailed/k9s")"
+    if [[ -n "${tag}" ]]; then
+      install_binary_from_tarball "https://github.com/derailed/k9s/releases/download/${tag}/k9s_Linux_${arch}.tar.gz" "k9s" || true
+    fi
+  fi
+
+  if ! command -v flux >/dev/null 2>&1; then
+    tag="$(latest_github_tag "fluxcd/flux2")"
+    if [[ -n "${tag}" ]]; then
+      install_binary_from_tarball "https://github.com/fluxcd/flux2/releases/download/${tag}/flux_${tag#v}_linux_${arch}.tar.gz" "flux" || true
+    fi
+  fi
+
+  if ! command -v kubeseal >/dev/null 2>&1; then
+    tag="$(latest_github_tag "bitnami-labs/sealed-secrets")"
+    if [[ -n "${tag}" ]]; then
+      install_binary_from_tarball "https://github.com/bitnami-labs/sealed-secrets/releases/download/${tag}/kubeseal-${tag#v}-linux-${arch}.tar.gz" "kubeseal" || true
+    fi
+  fi
+
+  if ! command -v stern >/dev/null 2>&1; then
+    tag="$(latest_github_tag "stern/stern")"
+    if [[ -n "${tag}" ]]; then
+      install_binary_from_tarball "https://github.com/stern/stern/releases/download/${tag}/stern_${tag#v}_linux_${arch}.tar.gz" "stern" || true
+    fi
+  fi
+}
 
 install_packages_best_effort() {
   local pkg
@@ -99,7 +191,9 @@ echo "==> Updating system"
 sudo dnf upgrade --refresh -y
 
 echo "==> Installing core packages"
-sudo dnf groupinstall -y "Development Tools"
+if ! sudo dnf group install -y "Development Tools"; then
+  sudo dnf groupinstall -y "Development Tools"
+fi
 install_packages_best_effort \
   git curl wget unzip tar gnupg rsync tree which \
   gcc gcc-c++ make cmake pkgconf-pkg-config openssl-devel \
@@ -132,10 +226,28 @@ if command -v pipx >/dev/null 2>&1; then
 fi
 
 install_packages_best_effort \
-  kubectl helm kustomize k9s fluxcd kubectx kubens stern \
-  sops age kubeseal \
+  kubectl helm kustomize kubectx kubens \
+  sops age \
   moby-engine docker-compose-plugin \
   redis postgresql
+
+if ! command -v k9s >/dev/null 2>&1; then
+  install_packages_best_effort k9s
+fi
+
+if ! command -v flux >/dev/null 2>&1; then
+  install_packages_best_effort fluxcd
+fi
+
+if ! command -v kubeseal >/dev/null 2>&1; then
+  install_packages_best_effort kubeseal
+fi
+
+if ! command -v stern >/dev/null 2>&1; then
+  install_packages_best_effort stern
+fi
+
+install_tool_fallbacks
 
 echo "==> Enabling Docker service"
 sudo systemctl enable --now docker || true
