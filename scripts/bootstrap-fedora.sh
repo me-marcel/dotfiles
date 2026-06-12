@@ -175,6 +175,11 @@ install_with_brew_fallback() {
     fi
 
     formula="$(brew_formula_for_pkg "$pkg")"
+    if "${BREW_BIN}" list --formula "$formula" >/dev/null 2>&1; then
+      echo "Skipping ${pkg}; brew formula ${formula} is already installed."
+      continue
+    fi
+
     if ! "${BREW_BIN}" install "$formula"; then
       failed+=("$pkg")
     fi
@@ -186,6 +191,45 @@ install_with_brew_fallback() {
   fi
 
   return 0
+}
+
+package_command_hint() {
+  case "$1" in
+    fd-find) echo "fd" ;;
+    nmap-ncat) echo "nc" ;;
+    bind-utils) echo "dig" ;;
+    python3-pip) echo "pip3" ;;
+    pkgconf-pkg-config) echo "pkg-config" ;;
+    gcc-c++) echo "g++" ;;
+    java-17-openjdk) echo "java" ;;
+    java-17-openjdk-devel) echo "javac" ;;
+    nodejs) echo "node" ;;
+    awscli|awscli2) echo "aws" ;;
+    moby-engine) echo "docker" ;;
+    docker-compose-plugin) echo "docker" ;;
+    postgresql) echo "psql" ;;
+    redis) echo "redis-cli" ;;
+    fluxcd) echo "flux" ;;
+    *)
+      echo "$1"
+      ;;
+  esac
+}
+
+is_package_satisfied() {
+  local pkg="$1"
+  local cmd
+
+  if rpm -q "$pkg" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  cmd="$(package_command_hint "$pkg")"
+  if command -v "$cmd" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  return 1
 }
 
 machine_arch() {
@@ -271,7 +315,13 @@ install_tool_fallbacks() {
 install_packages_best_effort() {
   local pkg
   local failed=()
+
   for pkg in "$@"; do
+    if is_package_satisfied "$pkg"; then
+      echo "Skipping ${pkg}; already available."
+      continue
+    fi
+
     if ! sudo dnf install -y "$pkg"; then
       failed+=("$pkg")
     fi

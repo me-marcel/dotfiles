@@ -7,6 +7,11 @@ FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBr
 FONT_DIR="${HOME}/.local/share/fonts/${FONT_NAME}NerdFont"
 TMP_DIR="$(mktemp -d)"
 ARCHIVE="${TMP_DIR}/${FONT_NAME}.zip"
+FORCE_INSTALL=false
+
+if [[ "${1:-}" == "--force" ]]; then
+  FORCE_INSTALL=true
+fi
 
 cleanup() {
   rm -rf "${TMP_DIR}"
@@ -24,6 +29,11 @@ if ! command -v unzip >/dev/null 2>&1; then
 fi
 
 mkdir -p "${FONT_DIR}"
+
+if [[ "${FORCE_INSTALL}" != true ]] && find "${FONT_DIR}" -maxdepth 1 -type f \( -name "*.ttf" -o -name "*.otf" \) | grep -q .; then
+  echo "${FONT_NAME} Nerd Font already installed at ${FONT_DIR}; skipping."
+  exit 0
+fi
 
 echo "==> Downloading ${FONT_NAME} Nerd Font"
 curl -fsSL "${FONT_URL}" -o "${ARCHIVE}"
