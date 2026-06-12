@@ -409,6 +409,43 @@ backup_stow_conflicts() {
   fi
 }
 
+ensure_ssh_key() {
+  local ssh_dir="${HOME}/.ssh"
+  local key_file="${ssh_dir}/id_ed25519"
+  local pub
+  local comment
+
+  mkdir -p "${ssh_dir}"
+  chmod 700 "${ssh_dir}"
+
+  for pub in "${ssh_dir}"/*.pub; do
+    [[ -f "${pub}" ]] || continue
+    case "$(basename "${pub}")" in
+      known_hosts*|authorized_keys*)
+        continue
+        ;;
+    esac
+    echo "Skipping SSH key generation; existing public key found at ${pub}."
+    return 0
+  done
+
+  if [[ -f "${key_file}" || -f "${key_file}.pub" ]]; then
+    echo "Skipping SSH key generation; ${key_file} already exists."
+    return 0
+  fi
+
+  if ! command -v ssh-keygen >/dev/null 2>&1; then
+    echo "ssh-keygen not found; installing openssh-clients."
+    install_packages_best_effort openssh-clients
+  fi
+
+  comment="${USER}@$(hostname)-$(date +%Y-%m-%d)"
+  ssh-keygen -t ed25519 -a 100 -N "" -C "${comment}" -f "${key_file}"
+  chmod 600 "${key_file}"
+  chmod 644 "${key_file}.pub"
+  echo "Generated SSH key: ${key_file}"
+}
+
 install_brave_and_replace_firefox() {
   echo "==> Installing Brave and removing Firefox"
 
@@ -636,6 +673,9 @@ fi
 
 install_password_manager
 configure_keepassxc_appearance
+
+echo "==> Ensuring SSH key exists"
+ensure_ssh_key
 
 echo "==> Installing Oh My Zsh"
 if [[ ! -d "${HOME}/.oh-my-zsh" ]]; then

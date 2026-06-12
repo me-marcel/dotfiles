@@ -26,6 +26,8 @@ Equivalent manual sequence is still available in the script body (`install.sh`).
 
 `install.sh` and the helper scripts are safe to rerun; package/font/extension installers skip already-installed items where possible.
 
+Bootstrap also ensures an SSH key exists by generating a new Ed25519 key (without passphrase) only when no existing user SSH public key is found.
+
 ## Notes
 
 - Place your wallpaper at `assets/wallpapers/orange-sunset.jpg` before running `install-themes.sh`.
