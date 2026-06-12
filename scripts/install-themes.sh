@@ -37,6 +37,7 @@ ICON_THEME="$(ls -1 "${ICONS_DIR}" 2>/dev/null | grep -E '^Tela.*(orange|Orange)
 
 if [[ -n "${GTK_THEME}" ]]; then
   gsettings set org.gnome.desktop.interface gtk-theme "${GTK_THEME}"
+  gsettings set org.gnome.desktop.interface accent-color 'orange' || true
   gsettings set org.gnome.desktop.wm.preferences theme "${GTK_THEME}"
   gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'
   gsettings set org.gnome.shell.extensions.user-theme name "${GTK_THEME}" || true

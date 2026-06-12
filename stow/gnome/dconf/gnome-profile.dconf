@@ -1,4 +1,5 @@
 [org/gnome/desktop/interface]
+accent-color='orange'
 color-scheme='prefer-dark'
 gtk-theme='Orchis-Dark-Orange'
 icon-theme='Tela-orange-dark'
