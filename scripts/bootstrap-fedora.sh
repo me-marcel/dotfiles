@@ -689,6 +689,18 @@ install_tool_fallbacks
 echo "==> Enabling Docker service"
 sudo systemctl enable --now docker || true
 
+echo "==> Adding ${USER} to docker group"
+if getent group docker >/dev/null 2>&1; then
+  if id -nG "${USER}" | grep -qw docker; then
+    echo "User ${USER} is already in docker group."
+  else
+    sudo usermod -aG docker "${USER}"
+    echo "Added ${USER} to docker group. Re-login required for group change."
+  fi
+else
+  echo "Docker group not found; skipping docker group membership update." >&2
+fi
+
 echo "==> Installing desktop tools"
 install_packages_best_effort gnome-tweaks gnome-extensions-app dconf-editor stow
 install_brave_and_replace_firefox
