@@ -3,7 +3,11 @@ export EDITOR="code"
 export VISUAL="code"
 export PAGER="less"
 
-ZSH_THEME="agnoster"
+ZSH_THEME=""
+ZSH_THEME_GIT_PROMPT_PREFIX=" %F{214}git:(%f"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%F{214})%f"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %F{196}*%f"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
 
 plugins=(
   git
@@ -16,6 +20,9 @@ plugins=(
 )
 
 source "$ZSH/oh-my-zsh.sh"
+
+setopt PROMPT_SUBST
+PROMPT='%F{255}%n@%m%f %F{244}in%f %F{250}%~%f${git_prompt_info} %# '
 
 HISTFILE="$HOME/.zsh_history"
 HISTSIZE=50000
@@ -37,8 +44,8 @@ bindkey '^[[1;5D' backward-word
 
 export FZF_DEFAULT_OPTS='--height=45% --layout=reverse --border --color=fg:#d7d7d7,bg:#1e1e1e,hl:#ff9f1c'
 
-alias ls='eza --group-directories-first --icons=auto'
-alias ll='eza -la --group-directories-first --icons=auto'
+alias ls='eza --group-directories-first'
+alias ll='eza -la --group-directories-first'
 alias cat='bat'
 alias grep='rg'
 alias find='fd'

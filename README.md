@@ -18,16 +18,13 @@ Reproducible Fedora 44 GNOME setup for development with:
 ```bash
 git clone <dotfiles-repo-url> ~/.dotfiles
 cd ~/.dotfiles
-./scripts/bootstrap-fedora.sh --apply-stow --with-flatpak
-./scripts/install-vscode.sh
-./scripts/install-opencode.sh
-./scripts/install-themes.sh
-./scripts/install-gnome-extensions.sh
-./scripts/gnome-dconf-import.sh
-stow -d stow -t "$HOME" zsh tmux git vscode opencode gnome
+./install.sh
 ```
+
+Equivalent manual sequence is still available in the script body (`install.sh`).
 
 ## Notes
 
 - Place your wallpaper at `assets/wallpapers/orange-sunset.jpg` before running `install-themes.sh`.
+- Run `install-fonts.sh` if you want Nerd Font glyph support for icon-heavy prompts/tools.
 - Re-login after bootstrap so shell/theme changes fully apply.
