@@ -51,15 +51,22 @@ apply_gtk4_theme_files() {
 
 window,
 window.background,
-.background {
+.background,
+.csd,
+.window-frame {
   background-color: rgba(24, 24, 24, 0.94);
 }
 
-decoration {
+decoration,
+window decoration,
+.window-frame {
   border: 1px solid transparent;
 }
 
-decoration:focus {
+window:focus-within decoration,
+window:focus decoration,
+decoration:focus,
+window:focus-within .window-frame {
   border-color: rgba(255, 159, 28, 0.9);
   box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.9);
 }
@@ -76,15 +83,22 @@ EOF
 
 window,
 window.background,
-.background {
+.background,
+.csd,
+.window-frame {
   background-color: rgba(24, 24, 24, 0.94);
 }
 
-decoration {
+decoration,
+window decoration,
+.window-frame {
   border: 1px solid transparent;
 }
 
-decoration:focus {
+window:focus-within decoration,
+window:focus decoration,
+decoration:focus,
+window:focus-within .window-frame {
   border-color: rgba(255, 159, 28, 0.9);
   box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.9);
 }
@@ -102,15 +116,21 @@ apply_gtk3_transparency_override() {
 
   cat > "${HOME}/.config/gtk-3.0/gtk.css" <<'EOF'
 window,
-.background {
+.background,
+.csd,
+.window-frame {
   background-color: rgba(24, 24, 24, 0.94);
 }
 
-decoration {
+decoration,
+window decoration,
+.window-frame {
   border: 1px solid transparent;
 }
 
-decoration:focus {
+window:focus decoration,
+decoration:focus,
+window:focus .window-frame {
   border-color: rgba(255, 159, 28, 0.9);
   box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.9);
 }
@@ -120,6 +140,63 @@ decoration:backdrop {
   box-shadow: none;
 }
 EOF
+}
+
+patch_orchis_theme_css() {
+  local theme_name="$1"
+  local gtk3_css="${THEMES_DIR}/${theme_name}/gtk-3.0/gtk.css"
+  local gtk4_css="${THEMES_DIR}/${theme_name}/gtk-4.0/gtk.css"
+  local gtk4_dark_css="${THEMES_DIR}/${theme_name}/gtk-4.0/gtk-dark.css"
+
+  python3 - "${gtk3_css}" "${gtk4_css}" "${gtk4_dark_css}" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+start = "/* DOTFILES_WINDOW_OVERRIDES_START */"
+end = "/* DOTFILES_WINDOW_OVERRIDES_END */"
+block = f"""
+{start}
+window,
+window.background,
+.background,
+.csd,
+.window-frame {{
+  background-color: rgba(24, 24, 24, 0.94);
+}}
+
+decoration,
+window decoration,
+.window-frame {{
+  border: 1px solid transparent;
+}}
+
+window:focus-within decoration,
+window:focus decoration,
+decoration:focus,
+window:focus-within .window-frame,
+window:focus .window-frame {{
+  border-color: rgba(255, 159, 28, 0.9);
+  box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.9);
+}}
+
+decoration:backdrop,
+window:backdrop .window-frame {{
+  border-color: transparent;
+  box-shadow: none;
+}}
+{end}
+""".strip() + "\n"
+
+pattern = re.compile(re.escape(start) + r".*?" + re.escape(end) + r"\n?", re.S)
+
+for p in map(Path, sys.argv[1:]):
+    if not p.exists():
+        continue
+    txt = p.read_text(encoding="utf-8")
+    txt = pattern.sub("", txt).rstrip() + "\n\n" + block
+    p.write_text(txt, encoding="utf-8")
+PY
 }
 
 enable_flatpak_theme_access() {
@@ -195,6 +272,7 @@ if [[ -n "${GTK_THEME}" ]]; then
   gsettings set org.gnome.desktop.wm.preferences theme "${GTK_THEME}"
   gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'
   gsettings set org.gnome.shell.extensions.user-theme name "${GTK_THEME}" || true
+  patch_orchis_theme_css "${GTK_THEME}"
   apply_gtk4_theme_files "${GTK_THEME}"
   apply_gtk3_transparency_override
   enable_flatpak_theme_access
