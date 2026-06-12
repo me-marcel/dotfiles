@@ -103,11 +103,14 @@ ensure_local_bin_dir() {
 
 start_sudo_session() {
   echo "==> Requesting sudo privileges"
-  sudo -v
+  if ! sudo -n -v >/dev/null 2>&1; then
+    sudo -v
+  fi
+  export DOTFILES_SUDO_ACTIVE=1
 
   (
     while true; do
-      sudo -n true >/dev/null 2>&1 || exit 0
+      sudo -n -v >/dev/null 2>&1 || exit 0
       sleep 45
     done
   ) &
@@ -444,6 +447,27 @@ EOF
   fi
 }
 
+install_password_manager() {
+  echo "==> Installing password manager"
+
+  if command -v flatpak >/dev/null 2>&1; then
+    sudo flatpak remote-add --if-not-exists flathub "https://flathub.org/repo/flathub.flatpakrepo"
+
+    if ! flatpak info org.keeweb.KeeWeb >/dev/null 2>&1; then
+      flatpak install -y flathub org.keeweb.KeeWeb
+    else
+      echo "Skipping KeeWeb install; already installed."
+    fi
+    return 0
+  fi
+
+  if ! command -v keepassxc >/dev/null 2>&1; then
+    sudo dnf install -y keepassxc
+  else
+    echo "Skipping KeePassXC install; already installed."
+  fi
+}
+
 trap stop_sudo_session EXIT
 start_sudo_session
 
@@ -518,6 +542,8 @@ if [[ "${WITH_FLATPAK}" == true ]]; then
   install_packages_best_effort flatpak
   sudo flatpak remote-add --if-not-exists flathub "https://flathub.org/repo/flathub.flatpakrepo"
 fi
+
+install_password_manager
 
 echo "==> Installing Oh My Zsh"
 if [[ ! -d "${HOME}/.oh-my-zsh" ]]; then

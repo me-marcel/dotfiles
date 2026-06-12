@@ -7,10 +7,14 @@ SUDO_KEEPALIVE_PID=""
 
 start_sudo_session() {
   echo "==> Requesting sudo privileges"
-  sudo -v
+  if ! sudo -n -v >/dev/null 2>&1; then
+    sudo -v
+  fi
+  export DOTFILES_SUDO_ACTIVE=1
+
   (
     while true; do
-      sudo -n true >/dev/null 2>&1 || exit 0
+      sudo -n -v >/dev/null 2>&1 || exit 0
       sleep 45
     done
   ) &

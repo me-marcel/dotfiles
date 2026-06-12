@@ -5,6 +5,7 @@ Reproducible Fedora 44 GNOME setup for development with:
 - Orchis dark + Tela orange theme stack
 - ZSH + tmux workflow
 - OpenCode + VS Code setup
+- KeeWeb password manager
 - Git + GNU Stow managed dotfiles
 
 ## Repository layout
