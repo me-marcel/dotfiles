@@ -54,6 +54,20 @@ window.background,
 .background {
   background-color: rgba(24, 24, 24, 0.94);
 }
+
+decoration {
+  border: 1px solid transparent;
+}
+
+decoration:focus {
+  border-color: rgba(255, 159, 28, 0.9);
+  box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.9);
+}
+
+decoration:backdrop {
+  border-color: transparent;
+  box-shadow: none;
+}
 EOF
 
   if [[ -L "${HOME}/.config/gtk-4.0/theme-dark.css" || -f "${HOME}/.config/gtk-4.0/theme-dark.css" ]]; then
@@ -64,6 +78,20 @@ window,
 window.background,
 .background {
   background-color: rgba(24, 24, 24, 0.94);
+}
+
+decoration {
+  border: 1px solid transparent;
+}
+
+decoration:focus {
+  border-color: rgba(255, 159, 28, 0.9);
+  box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.9);
+}
+
+decoration:backdrop {
+  border-color: transparent;
+  box-shadow: none;
 }
 EOF
   fi
@@ -76,6 +104,20 @@ apply_gtk3_transparency_override() {
 window,
 .background {
   background-color: rgba(24, 24, 24, 0.94);
+}
+
+decoration {
+  border: 1px solid transparent;
+}
+
+decoration:focus {
+  border-color: rgba(255, 159, 28, 0.9);
+  box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.9);
+}
+
+decoration:backdrop {
+  border-color: transparent;
+  box-shadow: none;
 }
 EOF
 }
