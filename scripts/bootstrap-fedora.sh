@@ -543,6 +543,33 @@ install_password_manager() {
   fi
 }
 
+refresh_docker_group_session() {
+  if [[ "${DOTFILES_IN_INSTALL_SH:-0}" == "1" ]]; then
+    return 0
+  fi
+
+  if [[ ! -t 0 ]]; then
+    return 0
+  fi
+
+  if ! getent group docker >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! getent group docker | grep -Eq "(^|:)docker:[^:]*:.*(^|,)${USER}(,|$)"; then
+    return 0
+  fi
+
+  if id -nG "${USER}" | grep -qw docker; then
+    return 0
+  fi
+
+  if command -v newgrp >/dev/null 2>&1; then
+    echo "Refreshing shell groups for Docker access..."
+    exec newgrp docker
+  fi
+}
+
 configure_hostname() {
   local current_hostname
   local requested_hostname
@@ -751,5 +778,7 @@ if [[ "${APPLY_STOW}" == true ]]; then
     stow -d "${REPO_ROOT}/stow" -t "${HOME}" "${STOW_MODULES[@]}"
   fi
 fi
+
+refresh_docker_group_session
 
 echo "Bootstrap finished. Re-login to fully apply shell changes."

@@ -5,6 +5,30 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUDO_KEEPALIVE_PID=""
 
+refresh_docker_group_session() {
+  if [[ ! -t 0 ]]; then
+    return 0
+  fi
+
+  if ! getent group docker >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! getent group docker | grep -Eq "(^|:)docker:[^:]*:.*(^|,)${USER}(,|$)"; then
+    return 0
+  fi
+
+  if id -nG "${USER}" | grep -qw docker; then
+    return 0
+  fi
+
+  if command -v newgrp >/dev/null 2>&1; then
+    echo "==> Refreshing shell groups for Docker access"
+    echo "A new shell will start with docker group permissions."
+    exec newgrp docker
+  fi
+}
+
 start_sudo_session() {
   if ! command -v sudo >/dev/null 2>&1; then
     return 0
@@ -43,7 +67,7 @@ run_step() {
 start_sudo_session
 
 run_step "Bootstrap Fedora packages" \
-  "${REPO_ROOT}/scripts/bootstrap-fedora.sh" --with-flatpak
+  env DOTFILES_IN_INSTALL_SH=1 "${REPO_ROOT}/scripts/bootstrap-fedora.sh" --with-flatpak
 
 run_step "Install Nerd Fonts" "${REPO_ROOT}/scripts/install-fonts.sh"
 run_step "Install VS Code and extensions" "${REPO_ROOT}/scripts/install-vscode.sh"
@@ -55,5 +79,7 @@ run_step "Apply stow modules" \
   stow -d "${REPO_ROOT}/stow" -t "${HOME}" zsh tmux git vscode opencode gnome
 
 run_step "Import GNOME dconf profile" "${REPO_ROOT}/scripts/gnome-dconf-import.sh"
+
+refresh_docker_group_session
 
 echo "Installation complete. Re-login to apply shell and GNOME changes."
