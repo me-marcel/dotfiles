@@ -3,6 +3,32 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SUDO_KEEPALIVE_PID=""
+
+start_sudo_session() {
+  if ! command -v sudo >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "==> Requesting sudo once at start"
+  sudo -v
+
+  (
+    while true; do
+      sudo -n true >/dev/null 2>&1 || exit 0
+      sleep 45
+    done
+  ) &
+  SUDO_KEEPALIVE_PID="$!"
+}
+
+stop_sudo_session() {
+  if [[ -n "${SUDO_KEEPALIVE_PID}" ]]; then
+    kill "${SUDO_KEEPALIVE_PID}" >/dev/null 2>&1 || true
+  fi
+}
+
+trap stop_sudo_session EXIT
 
 run_step() {
   local title="$1"
@@ -10,6 +36,8 @@ run_step() {
   echo "==> ${title}"
   "$@"
 }
+
+start_sudo_session
 
 run_step "Bootstrap Fedora packages" \
   "${REPO_ROOT}/scripts/bootstrap-fedora.sh" --with-flatpak

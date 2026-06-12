@@ -3,11 +3,33 @@
 set -euo pipefail
 
 EXTENSION_ID="blur-my-shell@aunetx"
+SUDO_KEEPALIVE_PID=""
+
+start_sudo_session() {
+  echo "==> Requesting sudo privileges"
+  sudo -v
+  (
+    while true; do
+      sudo -n true >/dev/null 2>&1 || exit 0
+      sleep 45
+    done
+  ) &
+  SUDO_KEEPALIVE_PID="$!"
+}
+
+stop_sudo_session() {
+  if [[ -n "${SUDO_KEEPALIVE_PID}" ]]; then
+    kill "${SUDO_KEEPALIVE_PID}" >/dev/null 2>&1 || true
+  fi
+}
 
 if [[ "${EUID}" -eq 0 ]]; then
   echo "Do not run as root." >&2
   exit 1
 fi
+
+trap stop_sudo_session EXIT
+start_sudo_session
 
 echo "==> Installing Blur My Shell extension package"
 if command -v gnome-extensions >/dev/null 2>&1 && gnome-extensions info "${EXTENSION_ID}" >/dev/null 2>&1; then

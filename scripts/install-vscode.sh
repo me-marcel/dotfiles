@@ -3,6 +3,29 @@
 set -euo pipefail
 
 USE_FLATPAK=false
+SUDO_KEEPALIVE_PID=""
+
+start_sudo_session() {
+  if ! command -v sudo >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "==> Requesting sudo privileges"
+  sudo -v
+  (
+    while true; do
+      sudo -n true >/dev/null 2>&1 || exit 0
+      sleep 45
+    done
+  ) &
+  SUDO_KEEPALIVE_PID="$!"
+}
+
+stop_sudo_session() {
+  if [[ -n "${SUDO_KEEPALIVE_PID}" ]]; then
+    kill "${SUDO_KEEPALIVE_PID}" >/dev/null 2>&1 || true
+  fi
+}
 
 usage() {
   cat <<'EOF'
@@ -31,6 +54,9 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+trap stop_sudo_session EXIT
+start_sudo_session
 
 extensions=(
   flaviodelgrosso.orange-juice-theme

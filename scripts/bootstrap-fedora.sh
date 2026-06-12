@@ -84,10 +84,14 @@ if ! command -v sudo >/dev/null 2>&1; then
   exit 1
 fi
 
+trap stop_sudo_session EXIT
+start_sudo_session
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 LOCAL_BIN_DIR="${HOME}/.local/bin"
 BREW_BIN=""
+SUDO_KEEPALIVE_PID=""
 
 ensure_local_bin_dir() {
   mkdir -p "${LOCAL_BIN_DIR}"
@@ -98,6 +102,25 @@ ensure_local_bin_dir() {
       export PATH="${LOCAL_BIN_DIR}:${PATH}"
       ;;
   esac
+}
+
+start_sudo_session() {
+  echo "==> Requesting sudo privileges"
+  sudo -v
+
+  (
+    while true; do
+      sudo -n true >/dev/null 2>&1 || exit 0
+      sleep 45
+    done
+  ) &
+  SUDO_KEEPALIVE_PID="$!"
+}
+
+stop_sudo_session() {
+  if [[ -n "${SUDO_KEEPALIVE_PID}" ]]; then
+    kill "${SUDO_KEEPALIVE_PID}" >/dev/null 2>&1 || true
+  fi
 }
 
 init_brew_env() {
@@ -393,7 +416,7 @@ echo "==> Installing core packages"
 install_dev_tools_group
 install_packages_best_effort \
   git curl wget unzip tar gnupg rsync tree which \
-  gcc gcc-c++ make cmake pkgconf-pkg-config openssl-devel \
+  gcc gcc-c++ make cmake pkgconf-pkg-config openssl-devel sassc \
   htop btop lsof sysstat
 
 echo "==> Installing CLI productivity packages"
@@ -476,7 +499,7 @@ fi
 
 echo "==> Configuring login shell"
 if [[ "${SHELL}" != "/usr/bin/zsh" ]]; then
-  chsh -s /usr/bin/zsh "${USER}"
+  sudo usermod --shell /usr/bin/zsh "${USER}" || true
 fi
 
 if [[ "${APPLY_STOW}" == true ]]; then
