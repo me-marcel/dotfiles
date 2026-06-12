@@ -406,6 +406,44 @@ backup_stow_conflicts() {
   fi
 }
 
+install_brave_and_replace_firefox() {
+  echo "==> Installing Brave and removing Firefox"
+
+  if [[ ! -f /etc/yum.repos.d/brave-browser.repo ]]; then
+    sudo rpm --import "https://brave-browser-rpm-release.s3.brave.com/brave-core.asc"
+    sudo tee /etc/yum.repos.d/brave-browser.repo >/dev/null <<'EOF'
+[brave-browser]
+name=Brave Browser
+baseurl=https://brave-browser-rpm-release.s3.brave.com/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://brave-browser-rpm-release.s3.brave.com/brave-core.asc
+EOF
+  fi
+
+  if ! command -v brave-browser >/dev/null 2>&1; then
+    sudo dnf install -y brave-browser
+  else
+    echo "Skipping brave-browser install; already available."
+  fi
+
+  if rpm -q firefox >/dev/null 2>&1; then
+    sudo dnf remove -y firefox
+  else
+    echo "Skipping Firefox removal; package not installed."
+  fi
+
+  if command -v xdg-settings >/dev/null 2>&1; then
+    xdg-settings set default-web-browser brave-browser.desktop || true
+  fi
+
+  if command -v gio >/dev/null 2>&1; then
+    gio mime x-scheme-handler/http brave-browser.desktop >/dev/null 2>&1 || true
+    gio mime x-scheme-handler/https brave-browser.desktop >/dev/null 2>&1 || true
+    gio mime text/html brave-browser.desktop >/dev/null 2>&1 || true
+  fi
+}
+
 trap stop_sudo_session EXIT
 start_sudo_session
 
@@ -474,6 +512,7 @@ sudo systemctl enable --now docker || true
 
 echo "==> Installing desktop tools"
 install_packages_best_effort gnome-tweaks gnome-extensions-app dconf-editor stow
+install_brave_and_replace_firefox
 
 if [[ "${WITH_FLATPAK}" == true ]]; then
   install_packages_best_effort flatpak
