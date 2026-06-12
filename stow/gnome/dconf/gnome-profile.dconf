@@ -1,7 +1,7 @@
 [org/gnome/desktop/interface]
 accent-color='orange'
 color-scheme='prefer-dark'
-gtk-theme='Orchis-Dark-Orange'
+gtk-theme='Orchis-Orange-Dark'
 icon-theme='Tela-orange-dark'
 
 [org/gnome/desktop/wm/preferences]
