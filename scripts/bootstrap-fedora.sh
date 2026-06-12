@@ -5,6 +5,7 @@ set -euo pipefail
 WITH_EXTRA_LANGS=false
 WITH_FLATPAK=false
 APPLY_STOW=false
+STOW_ADOPT=false
 STOW_MODULES=(zsh tmux git vscode opencode gnome)
 
 usage() {
@@ -15,6 +16,7 @@ Options:
   --with-extra-langs       Install optional language runtimes (Go, Rust, Java 17)
   --with-flatpak           Ensure Flatpak is installed and Flathub is configured
   --apply-stow             Apply stow modules after package setup
+  --stow-adopt             Use stow --adopt instead of backing up conflicts
   --stow-modules "..."      Space-separated stow module list
   -h, --help               Show this help
 EOF
@@ -32,6 +34,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --apply-stow)
       APPLY_STOW=true
+      shift
+      ;;
+    --stow-adopt)
+      STOW_ADOPT=true
       shift
       ;;
     --stow-modules)
@@ -295,6 +301,41 @@ install_dev_tools_group() {
   return 0
 }
 
+backup_stow_conflicts() {
+  local backup_root
+  local module
+  local src_root
+  local src
+  local rel
+  local target
+
+  backup_root="${HOME}/.dotfiles-pre-stow-backup/$(date +%Y%m%d-%H%M%S)"
+  shopt -s globstar nullglob dotglob
+
+  for module in "${STOW_MODULES[@]}"; do
+    src_root="${REPO_ROOT}/stow/${module}"
+    [[ -d "${src_root}" ]] || continue
+
+    for src in "${src_root}"/**; do
+      [[ -f "${src}" || -L "${src}" ]] || continue
+
+      rel="${src#${src_root}/}"
+      target="${HOME}/${rel}"
+
+      if [[ -e "${target}" && ! -L "${target}" ]]; then
+        mkdir -p "${backup_root}/$(dirname "${rel}")"
+        mv "${target}" "${backup_root}/${rel}"
+      fi
+    done
+  done
+
+  shopt -u globstar nullglob dotglob
+
+  if [[ -d "${backup_root}" ]]; then
+    echo "Backed up conflicting dotfiles to ${backup_root}"
+  fi
+}
+
 echo "==> Updating system"
 sudo dnf upgrade --refresh -y
 
@@ -390,7 +431,12 @@ fi
 
 if [[ "${APPLY_STOW}" == true ]]; then
   echo "==> Applying stow modules"
-  stow -d "${REPO_ROOT}/stow" -t "${HOME}" "${STOW_MODULES[@]}"
+  if [[ "${STOW_ADOPT}" == true ]]; then
+    stow --adopt -d "${REPO_ROOT}/stow" -t "${HOME}" "${STOW_MODULES[@]}"
+  else
+    backup_stow_conflicts
+    stow -d "${REPO_ROOT}/stow" -t "${HOME}" "${STOW_MODULES[@]}"
+  fi
 fi
 
 echo "Bootstrap finished. Re-login to fully apply shell changes."
