@@ -456,7 +456,6 @@ configure_brave_appearance() {
   cat > "${flags_file}" <<'EOF'
 --enable-features=UseOzonePlatform
 --ozone-platform-hint=auto
---gtk-version=4
 EOF
 
   if [[ -d "${profile_root}" ]]; then
@@ -471,7 +470,7 @@ with open(path, "r", encoding="utf-8") as f:
     data = json.load(f)
 
 browser = data.setdefault("browser", {})
-browser["custom_chrome_frame"] = False
+browser["custom_chrome_frame"] = True
 
 with open(path, "w", encoding="utf-8") as f:
     json.dump(data, f, separators=(",", ":"))
@@ -479,7 +478,7 @@ PY
     done
   fi
 
-  echo "Configured Brave to prefer native windowing and GTK integration."
+  echo "Configured Brave to use Ozone/Wayland and Brave-managed window controls."
 }
 
 install_password_manager() {
@@ -508,11 +507,44 @@ install_password_manager() {
 }
 
 configure_keepassxc_appearance() {
-  mkdir -p "${HOME}/.config/environment.d"
-  cat > "${HOME}/.config/environment.d/90-qt-gnome.conf" <<'EOF'
-QT_QPA_PLATFORM=wayland;xcb
-QT_QPA_PLATFORMTHEME=gnome
-EOF
+  local desktop_src="/usr/share/applications/org.keepassxc.KeePassXC.desktop"
+  local desktop_dst="${HOME}/.local/share/applications/org.keepassxc.KeePassXC.desktop"
+
+  rm -f "${HOME}/.config/environment.d/90-qt-gnome.conf"
+
+  mkdir -p "${HOME}/.local/share/applications"
+  if [[ -f "${desktop_src}" ]]; then
+    cp -f "${desktop_src}" "${desktop_dst}"
+  else
+    desktop_src="/usr/share/applications/keepassxc.desktop"
+    desktop_dst="${HOME}/.local/share/applications/keepassxc.desktop"
+    if [[ -f "${desktop_src}" ]]; then
+      cp -f "${desktop_src}" "${desktop_dst}"
+    fi
+  fi
+
+  if [[ -f "${desktop_dst}" ]]; then
+    python3 - "${desktop_dst}" <<'PY'
+from pathlib import Path
+import sys
+import re
+
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+out = []
+for line in lines:
+    if line.startswith("Exec=") and "keepassxc" in line:
+        cmd = line[len("Exec="):]
+        cmd = re.sub(r"^env\s+[^ ]+=\S+\s+[^ ]+=\S+\s+[^ ]+=\S+\s+", "", cmd)
+        cmd = re.sub(r"^env\s+", "", cmd)
+        line = (
+            "Exec=env QT_QPA_PLATFORM=wayland;xcb QT_QPA_PLATFORMTHEME=gtk3 "
+            + cmd
+        )
+    out.append(line)
+path.write_text("\n".join(out) + "\n", encoding="utf-8")
+PY
+  fi
 
   if command -v flatpak >/dev/null 2>&1 && flatpak info org.keepassxc.KeePassXC >/dev/null 2>&1; then
     flatpak override --user org.keepassxc.KeePassXC \
@@ -521,6 +553,8 @@ EOF
       --env=QT_QPA_PLATFORMTHEME=gtk3 \
       --filesystem=xdg-config/gtk-3.0:ro \
       --filesystem=xdg-config/gtk-4.0:ro >/dev/null 2>&1 || true
+
+    flatpak override --user --unset-env=QT_STYLE_OVERRIDE org.keepassxc.KeePassXC >/dev/null 2>&1 || true
   fi
 }
 
