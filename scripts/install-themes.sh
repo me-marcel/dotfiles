@@ -12,6 +12,7 @@ WALLPAPER_SOURCE="${REPO_ROOT}/assets/wallpapers/orange-sunset.jpg"
 WALLPAPER_TARGET="${BACKGROUND_DIR}/orange-sunset.jpg"
 ORCHIS_REPO_URL="https://github.com/vinceliuice/Orchis-theme"
 ORCHIS_FIX_BRANCH="fix-gnome50-sidebar"
+ORCHIS_FIX_FORK_URL="https://github.com/tristanmsct/Orchis-theme"
 
 mkdir -p "${SRC_DIR}" "${THEMES_DIR}" "${ICONS_DIR}" "${BACKGROUND_DIR}"
 
@@ -65,17 +66,39 @@ clone_or_update() {
 
 ensure_orchis_fix_branch() {
   local repo_dir="$1"
-  local origin_url
+  local has_origin_fix=false
+  local has_fork_fix=false
 
-  origin_url="$(git -C "${repo_dir}" remote get-url origin 2>/dev/null || true)"
-  case "${origin_url}" in
-    *github.com/vinceliuice/Orchis-theme*|*github.com/vinceliuice/orchis-theme*)
-      git -C "${repo_dir}" fetch origin "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1 || return 0
-      git -C "${repo_dir}" checkout "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1 || return 0
-      git -C "${repo_dir}" pull --ff-only origin "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1 || true
-      echo "Using Orchis branch ${ORCHIS_FIX_BRANCH}"
-      ;;
-  esac
+  if git -C "${repo_dir}" ls-remote --exit-code --heads origin "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1; then
+    has_origin_fix=true
+  fi
+
+  if [[ "${has_origin_fix}" == true ]]; then
+    git -C "${repo_dir}" fetch origin "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1
+    git -C "${repo_dir}" checkout "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1
+    git -C "${repo_dir}" pull --ff-only origin "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1 || true
+    echo "Using Orchis branch ${ORCHIS_FIX_BRANCH} from origin"
+    return 0
+  fi
+
+  if git ls-remote --exit-code --heads "${ORCHIS_FIX_FORK_URL}" "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1; then
+    has_fork_fix=true
+  fi
+
+  if [[ "${has_fork_fix}" == true ]]; then
+    if git -C "${repo_dir}" remote get-url orchis-fix >/dev/null 2>&1; then
+      git -C "${repo_dir}" remote set-url orchis-fix "${ORCHIS_FIX_FORK_URL}" >/dev/null 2>&1
+    else
+      git -C "${repo_dir}" remote add orchis-fix "${ORCHIS_FIX_FORK_URL}" >/dev/null 2>&1
+    fi
+
+    git -C "${repo_dir}" fetch orchis-fix "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1
+    git -C "${repo_dir}" checkout -B "${ORCHIS_FIX_BRANCH}" "orchis-fix/${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1
+    echo "Using Orchis branch ${ORCHIS_FIX_BRANCH} from tristanmsct fork"
+    return 0
+  fi
+
+  echo "Could not find ${ORCHIS_FIX_BRANCH}; continuing with default Orchis branch." >&2
 }
 
 echo "==> Installing Orchis theme"
