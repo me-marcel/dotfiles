@@ -36,15 +36,48 @@ apply_gtk4_theme_files() {
   fi
 
   mkdir -p "${HOME}/.config/gtk-4.0"
-  ln -sfn "${theme_gtk4_dir}/gtk.css" "${HOME}/.config/gtk-4.0/gtk.css"
+  ln -sfn "${theme_gtk4_dir}/gtk.css" "${HOME}/.config/gtk-4.0/theme.css"
 
   if [[ -f "${theme_gtk4_dir}/gtk-dark.css" ]]; then
-    ln -sfn "${theme_gtk4_dir}/gtk-dark.css" "${HOME}/.config/gtk-4.0/gtk-dark.css"
+    ln -sfn "${theme_gtk4_dir}/gtk-dark.css" "${HOME}/.config/gtk-4.0/theme-dark.css"
   fi
 
   if [[ -d "${theme_gtk4_dir}/assets" ]]; then
     ln -sfn "${theme_gtk4_dir}/assets" "${HOME}/.config/gtk-4.0/assets"
   fi
+
+  cat > "${HOME}/.config/gtk-4.0/gtk.css" <<'EOF'
+@import url("theme.css");
+
+window,
+window.background,
+.background {
+  background-color: rgba(24, 24, 24, 0.94);
+}
+EOF
+
+  if [[ -L "${HOME}/.config/gtk-4.0/theme-dark.css" || -f "${HOME}/.config/gtk-4.0/theme-dark.css" ]]; then
+    cat > "${HOME}/.config/gtk-4.0/gtk-dark.css" <<'EOF'
+@import url("theme-dark.css");
+
+window,
+window.background,
+.background {
+  background-color: rgba(24, 24, 24, 0.94);
+}
+EOF
+  fi
+}
+
+apply_gtk3_transparency_override() {
+  mkdir -p "${HOME}/.config/gtk-3.0"
+
+  cat > "${HOME}/.config/gtk-3.0/gtk.css" <<'EOF'
+window,
+.background {
+  background-color: rgba(24, 24, 24, 0.94);
+}
+EOF
 }
 
 enable_flatpak_theme_access() {
@@ -121,6 +154,7 @@ if [[ -n "${GTK_THEME}" ]]; then
   gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'
   gsettings set org.gnome.shell.extensions.user-theme name "${GTK_THEME}" || true
   apply_gtk4_theme_files "${GTK_THEME}"
+  apply_gtk3_transparency_override
   enable_flatpak_theme_access
 fi
 
