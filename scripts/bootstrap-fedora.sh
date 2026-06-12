@@ -453,10 +453,10 @@ install_password_manager() {
   if command -v flatpak >/dev/null 2>&1; then
     sudo flatpak remote-add --if-not-exists flathub "https://flathub.org/repo/flathub.flatpakrepo"
 
-    if ! flatpak info org.keeweb.KeeWeb >/dev/null 2>&1; then
-      flatpak install -y flathub org.keeweb.KeeWeb
+    if flatpak info org.keepassxc.KeePassXC >/dev/null 2>&1; then
+      echo "Skipping KeePassXC Flatpak install; already installed."
     else
-      echo "Skipping KeeWeb install; already installed."
+      flatpak install -y flathub org.keepassxc.KeePassXC
     fi
     return 0
   fi
