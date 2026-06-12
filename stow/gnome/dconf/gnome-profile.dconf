@@ -28,6 +28,6 @@ blur=true
 sigma=24
 
 [org/gnome/shell/extensions/blur-my-shell/panel]
-blur=false
+blur=true
 brightness=0.75
 sigma=16
