@@ -81,6 +81,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 LOCAL_BIN_DIR="${HOME}/.local/bin"
+BREW_BIN=""
 
 ensure_local_bin_dir() {
   mkdir -p "${LOCAL_BIN_DIR}"
@@ -91,6 +92,94 @@ ensure_local_bin_dir() {
       export PATH="${LOCAL_BIN_DIR}:${PATH}"
       ;;
   esac
+}
+
+init_brew_env() {
+  if [[ -x "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
+    BREW_BIN="/home/linuxbrew/.linuxbrew/bin/brew"
+  elif [[ -x "${HOME}/.linuxbrew/bin/brew" ]]; then
+    BREW_BIN="${HOME}/.linuxbrew/bin/brew"
+  else
+    return 1
+  fi
+
+  # shellcheck disable=SC1090
+  eval "$("${BREW_BIN}" shellenv)"
+  return 0
+}
+
+ensure_linuxbrew() {
+  if init_brew_env; then
+    return 0
+  fi
+
+  echo "Installing Linuxbrew for package fallback..."
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  init_brew_env
+}
+
+brew_formula_for_pkg() {
+  case "$1" in
+    python3) echo "python" ;;
+    python3-pip) echo "python" ;;
+    nodejs) echo "node" ;;
+    npm) echo "node" ;;
+    awscli) echo "awscli" ;;
+    postgresql) echo "libpq" ;;
+    fd-find) echo "fd" ;;
+    ripgrep) echo "ripgrep" ;;
+    nmap-ncat) echo "netcat" ;;
+    fluxcd) echo "fluxcd/tap/flux" ;;
+    kubeseal) echo "bitnami/tap/kubeseal" ;;
+    kubens) echo "kubectx" ;;
+    bind-utils) echo "bind" ;;
+    *)
+      # Most package names match formula names directly.
+      echo "$1"
+      ;;
+  esac
+}
+
+supports_brew_fallback() {
+  case "$1" in
+    curl|wget|unzip|tar|gnupg|rsync|tree|which|jq|yq|fzf|ripgrep|fd-find|bat|eza|ncdu|nmap|traceroute|mtr|nmap-ncat|zsh|tmux|python3|python3-pip|pipx|nodejs|npm|awscli|kubectl|helm|kustomize|k9s|fluxcd|kubectx|kubens|stern|sops|age|kubeseal|redis|postgresql|stow|bind-utils)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+install_with_brew_fallback() {
+  local pkg
+  local formula
+  local failed=()
+
+  if ! ensure_linuxbrew; then
+    echo "Linuxbrew installation failed; skipping brew fallback." >&2
+    return 1
+  fi
+
+  for pkg in "$@"; do
+    if ! supports_brew_fallback "$pkg"; then
+      failed+=("$pkg")
+      continue
+    fi
+
+    formula="$(brew_formula_for_pkg "$pkg")"
+    if ! "${BREW_BIN}" install "$formula"; then
+      failed+=("$pkg")
+    fi
+  done
+
+  if [[ ${#failed[@]} -gt 0 ]]; then
+    echo "Still unavailable after brew fallback: ${failed[*]}" >&2
+    return 1
+  fi
+
+  return 0
 }
 
 machine_arch() {
@@ -183,7 +272,8 @@ install_packages_best_effort() {
   done
 
   if [[ ${#failed[@]} -gt 0 ]]; then
-    echo "Skipped unavailable packages: ${failed[*]}" >&2
+    echo "DNF could not install: ${failed[*]}"
+    install_with_brew_fallback "${failed[@]}" || true
   fi
 }
 
