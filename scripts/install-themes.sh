@@ -10,6 +10,8 @@ ICONS_DIR="${HOME}/.local/share/icons"
 BACKGROUND_DIR="${HOME}/.local/share/backgrounds"
 WALLPAPER_SOURCE="${REPO_ROOT}/assets/wallpapers/orange-sunset.jpg"
 WALLPAPER_TARGET="${BACKGROUND_DIR}/orange-sunset.jpg"
+ORCHIS_REPO_URL="https://github.com/vinceliuice/Orchis-theme"
+ORCHIS_FIX_BRANCH="fix-gnome50-sidebar"
 
 mkdir -p "${SRC_DIR}" "${THEMES_DIR}" "${ICONS_DIR}" "${BACKGROUND_DIR}"
 
@@ -61,8 +63,24 @@ clone_or_update() {
   fi
 }
 
+ensure_orchis_fix_branch() {
+  local repo_dir="$1"
+  local origin_url
+
+  origin_url="$(git -C "${repo_dir}" remote get-url origin 2>/dev/null || true)"
+  case "${origin_url}" in
+    *github.com/vinceliuice/Orchis-theme*|*github.com/vinceliuice/orchis-theme*)
+      git -C "${repo_dir}" fetch origin "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1 || return 0
+      git -C "${repo_dir}" checkout "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1 || return 0
+      git -C "${repo_dir}" pull --ff-only origin "${ORCHIS_FIX_BRANCH}" >/dev/null 2>&1 || true
+      echo "Using Orchis branch ${ORCHIS_FIX_BRANCH}"
+      ;;
+  esac
+}
+
 echo "==> Installing Orchis theme"
-clone_or_update "https://github.com/vinceliuice/orchis-theme" "${SRC_DIR}/orchis-theme"
+clone_or_update "${ORCHIS_REPO_URL}" "${SRC_DIR}/orchis-theme"
+ensure_orchis_fix_branch "${SRC_DIR}/orchis-theme"
 apply_libadwaita_patch_if_supported "${SRC_DIR}/orchis-theme/install.sh"
 
 echo "==> Installing Tela icons"

@@ -49,4 +49,8 @@ if command -v gnome-extensions >/dev/null 2>&1; then
   fi
 fi
 
+if command -v gsettings >/dev/null 2>&1; then
+  gsettings set org.gnome.shell.extensions.blur-my-shell.panel blur false || true
+fi
+
 echo "GNOME extension setup complete. Log out and back in if the extension does not appear."
