@@ -447,24 +447,80 @@ EOF
   fi
 }
 
+configure_brave_appearance() {
+  local flags_file="${HOME}/.config/brave-flags.conf"
+  local profile_root="${HOME}/.config/BraveSoftware/Brave-Browser"
+  local pref_file
+
+  mkdir -p "${HOME}/.config"
+  cat > "${flags_file}" <<'EOF'
+--enable-features=UseOzonePlatform
+--ozone-platform-hint=auto
+--gtk-version=4
+EOF
+
+  if [[ -d "${profile_root}" ]]; then
+    for pref_file in "${profile_root}"/*/Preferences; do
+      [[ -f "${pref_file}" ]] || continue
+      python3 - "${pref_file}" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+browser = data.setdefault("browser", {})
+browser["custom_chrome_frame"] = False
+
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(data, f, separators=(",", ":"))
+PY
+    done
+  fi
+
+  echo "Configured Brave to prefer native windowing and GTK integration."
+}
+
 install_password_manager() {
   echo "==> Installing password manager"
 
-  if command -v flatpak >/dev/null 2>&1; then
-    sudo flatpak remote-add --if-not-exists flathub "https://flathub.org/repo/flathub.flatpakrepo"
-
-    if flatpak info org.keepassxc.KeePassXC >/dev/null 2>&1; then
-      echo "Skipping KeePassXC Flatpak install; already installed."
-    else
-      flatpak install -y flathub org.keepassxc.KeePassXC
+  if command -v keepassxc >/dev/null 2>&1 || rpm -q keepassxc >/dev/null 2>&1; then
+    echo "Skipping KeePassXC install; already installed."
+  else
+    if ! sudo dnf install -y keepassxc; then
+      if command -v flatpak >/dev/null 2>&1; then
+        sudo flatpak remote-add --if-not-exists flathub "https://flathub.org/repo/flathub.flatpakrepo"
+        if flatpak info org.keepassxc.KeePassXC >/dev/null 2>&1; then
+          echo "Skipping KeePassXC Flatpak install; already installed."
+        else
+          flatpak install -y flathub org.keepassxc.KeePassXC
+        fi
+      fi
     fi
-    return 0
   fi
 
-  if ! command -v keepassxc >/dev/null 2>&1; then
-    sudo dnf install -y keepassxc
-  else
-    echo "Skipping KeePassXC install; already installed."
+  if command -v keepassxc >/dev/null 2>&1 && command -v flatpak >/dev/null 2>&1; then
+    if flatpak info org.keepassxc.KeePassXC >/dev/null 2>&1; then
+      flatpak uninstall -y org.keepassxc.KeePassXC >/dev/null 2>&1 || true
+    fi
+  fi
+}
+
+configure_keepassxc_appearance() {
+  mkdir -p "${HOME}/.config/environment.d"
+  cat > "${HOME}/.config/environment.d/90-qt-gnome.conf" <<'EOF'
+QT_QPA_PLATFORM=wayland;xcb
+QT_QPA_PLATFORMTHEME=gnome
+EOF
+
+  if command -v flatpak >/dev/null 2>&1 && flatpak info org.keepassxc.KeePassXC >/dev/null 2>&1; then
+    flatpak override --user org.keepassxc.KeePassXC \
+      --socket=wayland \
+      --env=QT_QPA_PLATFORM=wayland \
+      --env=QT_QPA_PLATFORMTHEME=gtk3 \
+      --filesystem=xdg-config/gtk-3.0:ro \
+      --filesystem=xdg-config/gtk-4.0:ro >/dev/null 2>&1 || true
   fi
 }
 
@@ -537,6 +593,7 @@ sudo systemctl enable --now docker || true
 echo "==> Installing desktop tools"
 install_packages_best_effort gnome-tweaks gnome-extensions-app dconf-editor stow
 install_brave_and_replace_firefox
+configure_brave_appearance
 
 if [[ "${WITH_FLATPAK}" == true ]]; then
   install_packages_best_effort flatpak
@@ -544,6 +601,7 @@ if [[ "${WITH_FLATPAK}" == true ]]; then
 fi
 
 install_password_manager
+configure_keepassxc_appearance
 
 echo "==> Installing Oh My Zsh"
 if [[ ! -d "${HOME}/.oh-my-zsh" ]]; then
