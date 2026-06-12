@@ -13,6 +13,43 @@ WALLPAPER_TARGET="${BACKGROUND_DIR}/orange-sunset.jpg"
 
 mkdir -p "${SRC_DIR}" "${THEMES_DIR}" "${ICONS_DIR}" "${BACKGROUND_DIR}"
 
+apply_libadwaita_patch_if_supported() {
+  local install_script="$1"
+
+  if bash "${install_script}" --help 2>/dev/null | grep -q -- '--libadwaita'; then
+    bash "${install_script}" -c dark -t orange --tweaks solid macos --libadwaita
+    return 0
+  fi
+
+  bash "${install_script}" -c dark -t orange --tweaks solid macos
+}
+
+apply_gtk4_theme_files() {
+  local theme_name="$1"
+  local theme_gtk4_dir="${THEMES_DIR}/${theme_name}/gtk-4.0"
+
+  if [[ ! -d "${theme_gtk4_dir}" ]]; then
+    return 0
+  fi
+
+  mkdir -p "${HOME}/.config/gtk-4.0"
+  ln -sfn "${theme_gtk4_dir}/gtk.css" "${HOME}/.config/gtk-4.0/gtk.css"
+
+  if [[ -f "${theme_gtk4_dir}/gtk-dark.css" ]]; then
+    ln -sfn "${theme_gtk4_dir}/gtk-dark.css" "${HOME}/.config/gtk-4.0/gtk-dark.css"
+  fi
+
+  if [[ -d "${theme_gtk4_dir}/assets" ]]; then
+    ln -sfn "${theme_gtk4_dir}/assets" "${HOME}/.config/gtk-4.0/assets"
+  fi
+}
+
+enable_flatpak_theme_access() {
+  if command -v flatpak >/dev/null 2>&1; then
+    flatpak override --user --filesystem=xdg-data/themes >/dev/null 2>&1 || true
+  fi
+}
+
 clone_or_update() {
   local repo_url="$1"
   local target_dir="$2"
@@ -26,7 +63,7 @@ clone_or_update() {
 
 echo "==> Installing Orchis theme"
 clone_or_update "https://github.com/vinceliuice/orchis-theme" "${SRC_DIR}/orchis-theme"
-bash "${SRC_DIR}/orchis-theme/install.sh" -c dark -t orange --tweaks solid macos
+apply_libadwaita_patch_if_supported "${SRC_DIR}/orchis-theme/install.sh"
 
 echo "==> Installing Tela icons"
 clone_or_update "https://github.com/vinceliuice/Tela-icon-theme" "${SRC_DIR}/tela-icon-theme"
@@ -38,9 +75,12 @@ ICON_THEME="$(ls -1 "${ICONS_DIR}" 2>/dev/null | grep -E '^Tela.*(orange|Orange)
 if [[ -n "${GTK_THEME}" ]]; then
   gsettings set org.gnome.desktop.interface gtk-theme "${GTK_THEME}"
   gsettings set org.gnome.desktop.interface accent-color 'orange' || true
+  gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
   gsettings set org.gnome.desktop.wm.preferences theme "${GTK_THEME}"
   gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'
   gsettings set org.gnome.shell.extensions.user-theme name "${GTK_THEME}" || true
+  apply_gtk4_theme_files "${GTK_THEME}"
+  enable_flatpak_theme_access
 fi
 
 if [[ -n "${ICON_THEME}" ]]; then
