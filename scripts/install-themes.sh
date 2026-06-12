@@ -20,11 +20,11 @@ apply_libadwaita_patch_if_supported() {
   local install_script="$1"
 
   if bash "${install_script}" --help 2>/dev/null | grep -q -- '--libadwaita'; then
-    bash "${install_script}" -c dark -t orange --tweaks solid macos --libadwaita
+    bash "${install_script}" -c dark -t orange --tweaks solid --libadwaita
     return 0
   fi
 
-  bash "${install_script}" -c dark -t orange --tweaks solid macos
+  bash "${install_script}" -c dark -t orange --tweaks solid
 }
 
 apply_gtk4_theme_files() {
@@ -151,7 +151,7 @@ if [[ -n "${GTK_THEME}" ]]; then
   gsettings set org.gnome.desktop.interface accent-color 'orange' || true
   gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
   gsettings set org.gnome.desktop.wm.preferences theme "${GTK_THEME}"
-  gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'
+  gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'
   gsettings set org.gnome.shell.extensions.user-theme name "${GTK_THEME}" || true
   apply_gtk4_theme_files "${GTK_THEME}"
   apply_gtk3_transparency_override

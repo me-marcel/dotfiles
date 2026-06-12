@@ -5,7 +5,7 @@ gtk-theme='Orchis-Orange-Dark'
 icon-theme='Tela-orange-dark'
 
 [org/gnome/desktop/wm/preferences]
-button-layout='close,minimize,maximize:'
+button-layout=':minimize,maximize,close'
 
 [org/gnome/desktop/background]
 picture-options='zoom'
