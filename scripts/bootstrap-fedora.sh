@@ -187,13 +187,29 @@ install_packages_best_effort() {
   fi
 }
 
+install_dev_tools_group() {
+  local group_name
+  local candidates=("Development Tools" "development-tools")
+
+  for group_name in "${candidates[@]}"; do
+    if sudo dnf group install -y "${group_name}"; then
+      return 0
+    fi
+
+    if sudo dnf install -y "@${group_name}"; then
+      return 0
+    fi
+  done
+
+  echo "Could not install Development Tools group; continuing with explicit build packages." >&2
+  return 0
+}
+
 echo "==> Updating system"
 sudo dnf upgrade --refresh -y
 
 echo "==> Installing core packages"
-if ! sudo dnf group install -y "Development Tools"; then
-  sudo dnf groupinstall -y "Development Tools"
-fi
+install_dev_tools_group
 install_packages_best_effort \
   git curl wget unzip tar gnupg rsync tree which \
   gcc gcc-c++ make cmake pkgconf-pkg-config openssl-devel \
