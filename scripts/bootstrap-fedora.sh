@@ -84,9 +84,6 @@ if ! command -v sudo >/dev/null 2>&1; then
   exit 1
 fi
 
-trap stop_sudo_session EXIT
-start_sudo_session
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 LOCAL_BIN_DIR="${HOME}/.local/bin"
@@ -408,6 +405,9 @@ backup_stow_conflicts() {
     echo "Backed up conflicting dotfiles to ${backup_root}"
   fi
 }
+
+trap stop_sudo_session EXIT
+start_sudo_session
 
 echo "==> Updating system"
 sudo dnf upgrade --refresh -y
