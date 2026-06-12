@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+WITH_EXTRA_LANGS=false
+WITH_FLATPAK=false
+APPLY_STOW=false
+STOW_MODULES=(zsh tmux git vscode opencode gnome)
+
+usage() {
+  cat <<'EOF'
+Usage: ./scripts/bootstrap-fedora.sh [options]
+
+Options:
+  --with-extra-langs       Install optional language runtimes (Go, Rust, Java 17)
+  --with-flatpak           Ensure Flatpak is installed and Flathub is configured
+  --apply-stow             Apply stow modules after package setup
+  --stow-modules "..."      Space-separated stow module list
+  -h, --help               Show this help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --with-extra-langs)
+      WITH_EXTRA_LANGS=true
+      shift
+      ;;
+    --with-flatpak)
+      WITH_FLATPAK=true
+      shift
+      ;;
+    --apply-stow)
+      APPLY_STOW=true
+      shift
+      ;;
+    --stow-modules)
+      IFS=' ' read -r -a STOW_MODULES <<< "${2:-}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ "${EUID}" -eq 0 ]]; then
+  echo "Do not run this script as root." >&2
+  exit 1
+fi
+
+if [[ ! -f /etc/os-release ]]; then
+  echo "Unable to detect operating system." >&2
+  exit 1
+fi
+
+# shellcheck disable=SC1091
+source /etc/os-release
+
+if [[ "${ID:-}" != "fedora" ]]; then
+  echo "This script only supports Fedora." >&2
+  exit 1
+fi
+
+if [[ "${VERSION_ID:-}" != "44" ]]; then
+  echo "Expected Fedora 44, got Fedora ${VERSION_ID:-unknown}." >&2
+  exit 1
+fi
+
+if ! command -v sudo >/dev/null 2>&1; then
+  echo "sudo is required but not installed." >&2
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+install_packages_best_effort() {
+  local pkg
+  local failed=()
+  for pkg in "$@"; do
+    if ! sudo dnf install -y "$pkg"; then
+      failed+=("$pkg")
+    fi
+  done
+
+  if [[ ${#failed[@]} -gt 0 ]]; then
+    echo "Skipped unavailable packages: ${failed[*]}" >&2
+  fi
+}
+
+echo "==> Updating system"
+sudo dnf upgrade --refresh -y
+
+echo "==> Installing core packages"
+sudo dnf groupinstall -y "Development Tools"
+install_packages_best_effort \
+  git curl wget unzip tar gnupg rsync tree which \
+  gcc gcc-c++ make cmake pkgconf-pkg-config openssl-devel \
+  htop btop lsof sysstat
+
+echo "==> Installing CLI productivity packages"
+install_packages_best_effort \
+  zsh tmux fzf ripgrep fd-find bat eza ncdu \
+  jq yq \
+  bind-utils nmap traceroute mtr nmap-ncat iproute
+
+echo "==> Installing language runtimes"
+install_packages_best_effort python3 python3-pip pipx
+
+curl -fsSL "https://rpm.nodesource.com/setup_22.x" | sudo bash -
+install_packages_best_effort nodejs npm
+
+if [[ "${WITH_EXTRA_LANGS}" == true ]]; then
+  install_packages_best_effort golang rust cargo java-17-openjdk java-17-openjdk-devel
+fi
+
+echo "==> Installing cloud and infra tooling"
+if ! sudo dnf install -y awscli2; then
+  install_packages_best_effort awscli
+fi
+
+python3 -m pipx ensurepath >/dev/null 2>&1 || true
+if command -v pipx >/dev/null 2>&1; then
+  pipx install aws-sso-util || true
+fi
+
+install_packages_best_effort \
+  kubectl helm kustomize k9s fluxcd kubectx kubens stern \
+  sops age kubeseal \
+  moby-engine docker-compose-plugin \
+  redis postgresql
+
+echo "==> Enabling Docker service"
+sudo systemctl enable --now docker || true
+
+echo "==> Installing desktop tools"
+install_packages_best_effort gnome-tweaks gnome-extensions-app dconf-editor stow
+
+if [[ "${WITH_FLATPAK}" == true ]]; then
+  install_packages_best_effort flatpak
+  sudo flatpak remote-add --if-not-exists flathub "https://flathub.org/repo/flathub.flatpakrepo"
+fi
+
+echo "==> Installing Oh My Zsh"
+if [[ ! -d "${HOME}/.oh-my-zsh" ]]; then
+  RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+fi
+
+ZSH_CUSTOM="${ZSH_CUSTOM:-${HOME}/.oh-my-zsh/custom}"
+if [[ ! -d "${ZSH_CUSTOM}/plugins/zsh-autosuggestions" ]]; then
+  git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM}/plugins/zsh-autosuggestions"
+fi
+if [[ ! -d "${ZSH_CUSTOM}/plugins/zsh-syntax-highlighting" ]]; then
+  git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting "${ZSH_CUSTOM}/plugins/zsh-syntax-highlighting"
+fi
+if [[ ! -d "${ZSH_CUSTOM}/plugins/zsh-completions" ]]; then
+  git clone --depth=1 https://github.com/zsh-users/zsh-completions "${ZSH_CUSTOM}/plugins/zsh-completions"
+fi
+
+echo "==> Configuring login shell"
+if [[ "${SHELL}" != "/usr/bin/zsh" ]]; then
+  chsh -s /usr/bin/zsh "${USER}"
+fi
+
+if [[ "${APPLY_STOW}" == true ]]; then
+  echo "==> Applying stow modules"
+  stow -d "${REPO_ROOT}/stow" -t "${HOME}" "${STOW_MODULES[@]}"
+fi
+
+echo "Bootstrap finished. Re-login to fully apply shell changes."

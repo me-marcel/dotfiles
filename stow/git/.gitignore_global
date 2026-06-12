@@ -1,0 +1,48 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Node / JS / TS
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.nuxt/
+.angular/
+.cache/
+.parcel-cache/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Nx / Angular
+tmp/
+out-tsc/
+
+# NestJS
+logs/
+*.log
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Misc
+*.bak
+*.tmp
