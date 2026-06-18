@@ -1,0 +1,26 @@
+[user]
+    name = Your Name
+    email = your.email@example.com
+
+[core]
+    editor = code --wait
+    autocrlf = input
+    excludesfile = ~/.gitignore_global
+
+[init]
+    defaultBranch = main
+
+[pull]
+    rebase = true
+
+[push]
+    default = simple
+    autoSetupRemote = true
+
+[alias]
+    co = checkout
+    br = branch
+    st = status -sb
+    lg = log --oneline --graph --decorate --all
+    last = log -1 HEAD
+    unstage = restore --staged --
